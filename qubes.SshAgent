@@ -4,7 +4,7 @@ CLIENT="$QREXEC_REMOTE_DOMAIN"
 
 DEFAULT_FILE="$QUBES_SSH_DIRECTORY/.$CLIENT.default"
 
-DIALOG_TEXT="Select key for \"$CLIENT\""
+DIALOG_TEXT="\"$CLIENT\" is requesting a ssh key"
 
 # find_keys() finds all keys and
 find_keys() {
