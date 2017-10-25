@@ -1,0 +1,5 @@
+# Uncomment next line to enable ssh agent forwarding to the named VM
+export SSH_VAULT_VM=vault
+export SSH_AUTH_SOCK=$(mktemp -u)
+
+socat UNIX-LISTEN:$SSH_AUTH_SOCK,fork,umask=177 EXEC:"qrexec-client-vm $SSH_VAULT_VM qubes.SshAgent" && rm $SSH_AUTH_SOCK &

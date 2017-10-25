@@ -1,3 +1,55 @@
 #!/bin/sh
-notify-send "[`qubesdb-read /name`] SSH agent access from: $QREXEC_REMOTE_DOMAIN"
-ncat -U $SSH_AUTH_SOCK
+QUBES_SSH_DIRECTORY="$HOME/.qubes_ssh"
+CLIENT="$QREXEC_REMOTE_DOMAIN"
+
+DEFAULT_FILE="$QUBES_SSH_DIRECTORY/.$CLIENT.default"
+
+DIALOG_TEXT="Select key for \"$CLIENT\""
+
+# find_keys() finds all keys and
+find_keys() {
+
+  KEYS_STRING=""
+  DEFAULT_KEY=$(cat $DEFAULT_FILE)
+
+  for KEY in $QUBES_SSH_DIRECTORY/*.pub; do
+    KEY_BASENAME=$(basename $KEY .pub)
+
+    # Default key will be already selected in prompt
+    if [ "$KEY_BASENAME" = "$DEFAULT_KEY" ] ; then
+      DEFAULT="True"
+    else
+      DEFAULT="False"
+    fi
+
+    KEYS_STRING="$KEYS_STRING $DEFAULT $KEY_BASENAME"
+
+  done
+  echo $KEYS_STRING
+}
+
+# Prompt user for key selection
+SELECTED=$(zenity --list --radiolist --title "SSH key selection" --text="$DIALOG_TEXT" --column=Select --column=Key $(find_keys))
+KEY_FILE=$QUBES_SSH_DIRECTORY/$SELECTED
+
+# Exit if nothing selected
+if [ -z $SELECTED ] ; then
+  exit 1
+fi
+
+# Save default key selection
+echo $SELECTED > $DEFAULT_FILE
+
+# Make sure ssh-add is happy with permissions
+chmod 0700 $QUBES_SSH_DIRECTORY
+chmod 0600 $QUBES_SSH_DIRECTORY/*
+
+# Start ssh-agent, add key
+eval $(ssh-agent) > /dev/null
+ssh-add $KEY_FILE
+
+# Connect to ssh-agent, proxying over stdio
+socat - UNIX-CONNECT:$SSH_AUTH_SOCK
+
+# Clean up
+kill $SSH_AGENT_PID
