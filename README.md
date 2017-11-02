@@ -23,10 +23,10 @@ Copy files from this repo to various destinations (VM is the first argument). Yo
 
 - Template for Vault: Copy qubes.SshAgent to /etc/qubes-rpc/qubes.SshAgent in the template image for the Vault VM.
 
-- Client VM: copy `qubes_ssh_agent` to `/usr/bin/`.
+- Client VM: copy `qubes-ssh-agent` to `/usr/bin/`.
     * This is what starts the client side of the ssh agent
-    * To run it automatically, add `. qubes_ssh_agent` to your .profile or .bashrc
-    * Make sure `qubes_ssh_agent` is executable. ie - `chmod +x /usr/bin/qubes_ssh_agent`
+    * To run it automatically, add `. qubes-ssh-agent` to your .profile or .bashrc
+    * Make sure `qubes-ssh-agent` is executable. ie - `chmod +x /usr/bin/qubes-ssh-agent`
 
 # Todo
 
