@@ -29,7 +29,7 @@ find_keys() {
 }
 
 # Prompt user for key selection
-SELECTED=$(zenity --list --radiolist --title "SSH key selection" --text="$DIALOG_TEXT" --column=Select --column=Key $(find_keys))
+SELECTED=$(zenity --list --radiolist --title "SSH key selection" --text="$DIALOG_TEXT" --column=Select --column=Key $(find_keys) >& /dev/null)
 KEY_FILE=$QUBES_SSH_DIRECTORY/$SELECTED
 
 # Exit if nothing selected
@@ -46,7 +46,7 @@ chmod 0600 $QUBES_SSH_DIRECTORY/*
 
 # Start ssh-agent, add key
 eval $(ssh-agent) > /dev/null
-ssh-add $KEY_FILE
+ssh-add $KEY_FILE > /dev/null
 
 # Connect to ssh-agent, proxying over stdio
 socat - UNIX-CONNECT:$SSH_AUTH_SOCK
