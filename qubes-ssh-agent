@@ -2,4 +2,9 @@
 export SSH_VAULT_VM=vault
 export SSH_AUTH_SOCK=$(mktemp -u)
 
-socat UNIX-LISTEN:$SSH_AUTH_SOCK,fork,umask=177 EXEC:"qrexec-client-vm $SSH_VAULT_VM qubes.SshAgent" && rm $SSH_AUTH_SOCK &
+socat UNIX-LISTEN:$SSH_AUTH_SOCK,fork,umask=177 EXEC:"qrexec-client-vm $SSH_VAULT_VM qubes.SshAgent" &
+
+export SSH_AGENT_PID=$!
+echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK; export SSH_AUTH_SOCK;"
+echo "SSH_AGENT_PID=$SSH_AGENT_PID; export SSH_AGENT_PID;"
+echo "echo SSA pid $SSH_AGENT_PID;"
