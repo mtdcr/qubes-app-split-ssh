@@ -11,7 +11,7 @@ DIALOG_TEXT="\"$CLIENT\" is requesting a ssh key"
 find_keys() {
 
   KEYS_STRING=""
-  DEFAULT_KEY=$(cat $DEFAULT_FILE)
+  DEFAULT_KEY=$(cat $DEFAULT_FILE 2> /dev/null)
 
   for KEY in $QUBES_SSH_DIRECTORY/*.pub; do
     KEY_BASENAME=$(basename $KEY .pub)
@@ -30,7 +30,7 @@ find_keys() {
 }
 
 # Prompt user for key selection
-SELECTED=$(zenity --list --radiolist --title "SSH key selection" --text="$DIALOG_TEXT" --column=Select --column=Key $(find_keys) >& /dev/null)
+SELECTED=$(zenity --list --radiolist --title "SSH key selection" --text="$DIALOG_TEXT" --column=Select --column=Key $(find_keys) 2> /dev/null)
 KEY_FILE=$QUBES_SSH_DIRECTORY/$SELECTED
 
 # Exit if nothing selected
