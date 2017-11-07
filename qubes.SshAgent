@@ -1,6 +1,7 @@
 #!/bin/sh
 QUBES_SSH_DIRECTORY="$HOME/.qubes_ssh"
 CLIENT="$QREXEC_REMOTE_DOMAIN"
+TIMEOUT=10
 
 DEFAULT_FILE="$QUBES_SSH_DIRECTORY/.$CLIENT.default"
 
@@ -49,7 +50,14 @@ eval $(ssh-agent) > /dev/null
 ssh-add $KEY_FILE > /dev/null
 
 # Connect to ssh-agent, proxying over stdio
-socat - UNIX-CONNECT:$SSH_AUTH_SOCK
+socat - UNIX-CONNECT:$SSH_AUTH_SOCK &
+SOCAT_PID=$!
+
+if [ $TIMEOUT -gt 0 ] ; then
+  (sleep $TIMEOUT && kill $SOCAT_PID) &
+fi
+
+wait $SOCAT_PID
 
 # Clean up
 kill $SSH_AGENT_PID
