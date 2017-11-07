@@ -1,6 +1,10 @@
 #!/bin/sh
 QUBES_SSH_DIRECTORY="$HOME/.qubes_ssh"
 CLIENT="$QREXEC_REMOTE_DOMAIN"
+if [ ! -d $QUBES_SSH_DIRECTORY ] ; then
+  echo "Directory '$QUBES_SSH_DIRECTORY' not found" 1>&2
+  exit 1
+fi
 TIMEOUT=10
 
 DEFAULT_FILE="$QUBES_SSH_DIRECTORY/.$CLIENT.default"
@@ -13,7 +17,7 @@ find_keys() {
   KEYS_STRING=""
   DEFAULT_KEY=$(cat $DEFAULT_FILE 2> /dev/null)
 
-  for KEY in $QUBES_SSH_DIRECTORY/*.pub; do
+  for KEY in $(find $QUBES_SSH_DIRECTORY -name '*.pub'); do
     KEY_BASENAME=$(basename $KEY .pub)
 
     # Default key will be already selected in prompt
@@ -29,8 +33,15 @@ find_keys() {
   echo $KEYS_STRING
 }
 
+# Find keys, and exit if none found
+KEYS=$(find_keys)
+if [ -z "$KEYS" ] ; then
+  echo "No ssh keys found" 1>&2
+  exit 1
+fi
+
 # Prompt user for key selection
-SELECTED=$(zenity --list --radiolist --title "SSH key selection" --text="$DIALOG_TEXT" --column=Select --column=Key $(find_keys) 2> /dev/null)
+SELECTED=$(zenity --list --radiolist --title "SSH key selection" --text="$DIALOG_TEXT" --column=Select --column=Key $KEYS 2> /dev/null)
 KEY_FILE=$QUBES_SSH_DIRECTORY/$SELECTED
 
 # Exit if nothing selected
@@ -54,7 +65,7 @@ socat - UNIX-CONNECT:$SSH_AUTH_SOCK &
 SOCAT_PID=$!
 
 if [ $TIMEOUT -gt 0 ] ; then
-  (sleep $TIMEOUT && kill $SOCAT_PID) &
+  (sleep $TIMEOUT && kill $SOCAT_PID 2> /dev/null) &
 fi
 
 wait $SOCAT_PID
