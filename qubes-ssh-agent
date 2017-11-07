@@ -1,10 +1,12 @@
-# Uncomment next line to enable ssh agent forwarding to the named VM
+#!/bin/sh
+# A simple script to start a listener for SSA
 export SSH_VAULT_VM=vault
 export SSH_AUTH_SOCK=$(mktemp -u)
 
-socat UNIX-LISTEN:$SSH_AUTH_SOCK,fork,umask=177 EXEC:"qrexec-client-vm $SSH_VAULT_VM qubes.SshAgent" &
+socat UNIX-LISTEN:$SSH_AUTH_SOCK,fork,umask=177 EXEC:"qrexec-client-vm $SSH_VAULT_VM qubes.SshAgent" 2>&1 > /dev/null < /dev/null &
 
 export SSH_AGENT_PID=$!
+
 echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK; export SSH_AUTH_SOCK;"
 echo "SSH_AGENT_PID=$SSH_AGENT_PID; export SSH_AGENT_PID;"
 echo "echo SSA pid $SSH_AGENT_PID;"
