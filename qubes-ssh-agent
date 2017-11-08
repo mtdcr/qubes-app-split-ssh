@@ -1,12 +1,35 @@
 #!/bin/sh
 # A simple script to start a listener for SSA
 export SSH_VAULT_VM=vault
+SCRIPT_NAME=$0
+
+HELP=false
+COMMAND=false
+while true; do
+  case "$1" in
+    -h | --help ) HELP=true; shift ;;
+    "" ) break ;;
+    * ) COMMAND=true; break ;;
+  esac
+done
+
+# Print help if desired, exit
+if $HELP ; then
+  echo "$SCRIPT_NAME [-h|--help] [command [args]]"
+  exit 1
+fi
+
+# Start proxy server
 export SSH_AUTH_SOCK=$(mktemp -u)
-
 socat UNIX-LISTEN:$SSH_AUTH_SOCK,fork,umask=177 EXEC:"qrexec-client-vm $SSH_VAULT_VM qubes.SshAgent" 2>&1 > /dev/null < /dev/null &
-
 export SSH_AGENT_PID=$!
 
-echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK; export SSH_AUTH_SOCK;"
-echo "SSH_AGENT_PID=$SSH_AGENT_PID; export SSH_AGENT_PID;"
-echo "echo SSA pid $SSH_AGENT_PID;"
+# If command supplied, run command, else print VARS to stdout
+if $COMMAND ; then
+  $@
+  kill $SSH_AGENT_PID
+else
+  echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK; export SSH_AUTH_SOCK;"
+  echo "SSH_AGENT_PID=$SSH_AGENT_PID; export SSH_AGENT_PID;"
+  echo "echo SSA pid $SSH_AGENT_PID;"
+fi
