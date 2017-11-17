@@ -21,7 +21,7 @@ fi
 
 # Start proxy server
 export SSH_AUTH_SOCK=$(mktemp -u)
-socat UNIX-LISTEN:$SSH_AUTH_SOCK,fork,umask=177 EXEC:"qrexec-client-vm $SSH_VAULT_VM qubes.SshAgent" 2>&1 > /dev/null < /dev/null &
+socat UNIX-LISTEN:$SSH_AUTH_SOCK,fork,umask=177 EXEC:"qrexec-client-vm $SSH_VAULT_VM qubes.SshAgent" 2>1 > /dev/null < /dev/null &
 export SSH_AGENT_PID=$!
 
 # If command supplied, run command, else print VARS to stdout
