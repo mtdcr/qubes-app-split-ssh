@@ -1,35 +1,49 @@
 # Qubes Split SSH
 
-These Qubes scripts allow one to keep ssh private keys in a separate VM (a "vault"), allowing other VMs to use them only after being authorized. This
-is done by using Qubes's [qrexec framework](https://www.qubes-os.org/doc/qrexec2/) to connect a local unix socket in an AppVM to a SSH Agent socket within the vault VM. Each connection creates a new SSH Agent, which only holds a single key as chosen by the user. 
+These Qubes scripts allow to keep SSH private keys in a separate VM (a "vault"), allowing other VMs to use them only after being authorized. This
+is done by using Qubes' [qrexec framework](https://www.qubes-os.org/doc/qrexec2/) to connect a local unix socket in an AppVM to an SSH agent socket within the vault VM. Each connection creates a new SSH Agent, which only holds a single key as chosen by the user.
 
 This was inspired by the Qubes [Split GPG](https://www.qubes-os.org/doc/split-gpg/) and [sshecret](https://github.com/thcipriani/sshecret).
 
 Other details:
-- This was developed/tested on the debian-8 template in Qubes 4.0; it might work for other templates
+- This was developed/tested on the debian-9 template in Qubes 4.0.1; it might work for other templates
 - You will be prompted to confirm each request, though like split GPG you won't see what was requested
-- One can have an arbitrary number of vault VMs, you just need to adjust `/etc/qubes-rpc/policy/qubes.SshAgent`
+- One can have an arbitrary number of vault VMs, you just need to adjust `/rw/config/ssh-vault`.
 
-# Instructions
+## About this fork
 
-## Make
+- This fork was based on https://github.com/a51f733a0cf842ec/qubes-app-split-ssh, which in turn was based on https://github.com/henn/qubes-app-split-ssh.
+- It offers a more robust implementation of the server side, avoiding protocol errors and handling special characters.
+- On the AppVM side, it needs almost no code, as it uses systemd's socket-activation feature.
+- Each AppVM gets access to its own keyring only.
+- You will be prompted to confirm each request for a key.
+- Individual AppVMs can use it without further configuration, unless your SSH-vault doesn't use the default name ("ssh-vault"), in which case only one file needs to get adjusted.
 
-You can install with either `make install-vm` or `make install-adminvm`, depending on the VM
+## Installation instructions
 
-## Manual
-Copy files from this repo to various destinations (VM is the first argument). You can use `qvm-copy-to-vm $DEST_VM file`
+Copy files from this repository to various destinations (VM is the first argument). You can use `qvm-copy <filename>`.
 
-- Dom0: Copy qubes.SshAgent.policy to AdminVM's /etc/qubes-rpc/policy/qubes.SshAgent
+- Dom0
 
-- Template for Vault: Copy qubes.SshAgent to /etc/qubes-rpc/qubes.SshAgent in the template image for the Vault VM.
+  * Copy `qubes.SshAgent.policy` to `/etc/qubes-rpc/policy/qubes.SshAgent`
 
-- Client VM: copy `qubes-ssh-agent` to `/usr/bin/`.
-    * This is what starts the client side of the ssh agent
-    * To run it automatically, add `. qubes-ssh-agent` to your .profile or .bashrc
-    * Make sure `qubes-ssh-agent` is executable. ie - `chmod +x /usr/bin/qubes-ssh-agent`
+- TemplateVM for SSH-vault
 
-# Todo
+  * Copy `qubes.SshAgent` to `/etc/qubes-rpc/qubes.SshAgent`.
+  * Shutdown your TemplateVM.
 
-- Add timeout to qubes.SshAgent script, closing the connection after 10s perhaps 
+- TemplateVM for AppVM:
 
-- (possibly distant future) Figure out a way to display info on what is being signed
+  * Copy `qubes-ssh-agent.sh` to `/etc/profile.d/`.
+  * Copy `qubes-ssh-agent@.service` and `qubes-ssh-agent.socket` to `/etc/systemd/user/`. Run `sudo systemctl --global enable qubes-ssh-agent.socket`
+  * Shutdown your TemplateVM.
+
+- SSH-vault:
+
+  * Create a directory `~/.qubes-ssh/$AppVM` for each AppVM allowed to access your SSH-vault.
+  * Populate these directories with private and public SSH key files.
+
+- AppVM (optional):
+
+  * Put the name of your SSH-vault into `/rw/config/ssh-vault`.
+  * Restart your AppVM.
