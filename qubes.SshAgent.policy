@@ -1,1 +1,1 @@
-$anyvm vault allow
+$anyvm ssh-vault allow
