@@ -1,0 +1,8 @@
+[Unit]
+Description=Split-SSH agent
+Requires=%p.socket
+
+[Service]
+Environment=SSH_VAULT_VM=ssh-vault
+ExecStart=/bin/sh -c '[ -f /rw/config/ssh-vault ] && SSH_VAULT_VM=$(cat /rw/config/ssh-vault); exec /usr/bin/qrexec-client-vm "$SSH_VAULT_VM" qubes.SshAgent'
+StandardInput=socket

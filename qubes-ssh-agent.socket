@@ -1,0 +1,11 @@
+[Unit]
+Description=Split-SSH agent socket
+
+[Socket]
+ListenStream=%t/%p/agent
+SocketMode=0600
+DirectoryMode=0700
+Accept=yes
+
+[Install]
+WantedBy=sockets.target
