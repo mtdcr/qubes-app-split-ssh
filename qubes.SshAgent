@@ -1,70 +1,68 @@
-#!/bin/sh
-QUBES_SSH_DIRECTORY="$HOME/.qubes_ssh"
-CLIENT="$QREXEC_REMOTE_DOMAIN"
-if [ ! -d $QUBES_SSH_DIRECTORY ] ; then
-  echo "Directory '$QUBES_SSH_DIRECTORY' not found" 1>&2
-  exit 1
-fi
+#!/bin/bash
+
+LOGGER="logger -t qubes.SshAgent"
 TIMEOUT=10
 
-DEFAULT_FILE="$QUBES_SSH_DIRECTORY/.$CLIENT.default"
+select_key() {
+  local QUBES_SSH_DIRECTORY="$HOME/.qubes_ssh/$QREXEC_REMOTE_DOMAIN"
+  if [ ! -d "$QUBES_SSH_DIRECTORY" ]; then
+    echo "Directory '$QUBES_SSH_DIRECTORY' not found" | $LOGGER
+    return
+  fi
 
-DIALOG_TEXT="\"$CLIENT\" is requesting a ssh key"
+  local DEFAULT_FILE="$QUBES_SSH_DIRECTORY/.default"
+  local DEFAULT_KEY=
+  if [ -r "$DEFAULT_FILE" ]; then
+    DEFAULT_KEY=$(cat "$DEFAULT_FILE")
+  fi
 
-# find_keys() finds all keys and
-find_keys() {
+  local argc=0
+  local argv=()
+  while IFS= read -r -d '' KEY; do
+    KEY_BASENAME=$(basename "$KEY" .pub)
 
-  KEYS_STRING=""
-  DEFAULT_KEY=$(cat $DEFAULT_FILE 2> /dev/null)
-
-  for KEY in $(find $QUBES_SSH_DIRECTORY -name '*.pub'); do
-    KEY_BASENAME=$(basename $KEY .pub)
-
-    # Default key will be already selected in prompt
-    if [ "$KEY_BASENAME" = "$DEFAULT_KEY" ] ; then
-      DEFAULT="True"
-    else
-      DEFAULT="False"
+    if [ -r "$QUBES_SSH_DIRECTORY/$KEY_BASENAME" ]; then
+      # Default key will be already selected in prompt
+      if [ "$KEY_BASENAME" = "$DEFAULT_KEY" ]; then
+        argv[$((argc++))]=True
+      else
+        argv[$((argc++))]=False
+      fi
+      argv[$((argc++))]=$KEY_BASENAME
     fi
 
-    KEYS_STRING="$KEYS_STRING $DEFAULT $KEY_BASENAME"
+  done < <(find "$QUBES_SSH_DIRECTORY" -type f -name '*.pub' -print0 | sort -z)
 
-  done
-  echo $KEYS_STRING
+  if [ $argc -eq 0 ]; then
+    echo "No SSH keys found in directory '$QUBES_SSH_DIRECTORY'" | $LOGGER
+    return
+  fi
+
+  local SELECTED=$(zenity --list --radiolist --title "SSH key selection" \
+                          --text="Domain $QREXEC_REMOTE_DOMAIN is requesting an ssh key." \
+                          --column=Select --column=Key --width=300 --height=400 \
+                          "${argv[@]}" 2>/dev/null)
+  if [ -n "$SELECTED" ]; then
+    echo "$SELECTED" >"$DEFAULT_FILE"
+    echo "$QUBES_SSH_DIRECTORY/$SELECTED"
+  fi
 }
 
-# Find keys, and exit if none found
-KEYS=$(find_keys)
-if [ -z "$KEYS" ] ; then
-  echo "No ssh keys found" 1>&2
-  exit 1
-fi
+# Start ssh-agent, add key
+eval $(umask 0077; ssh-agent) >/dev/null
 
 # Prompt user for key selection
-SELECTED=$(zenity --list --radiolist --title "SSH key selection" --text="$DIALOG_TEXT" --column=Select --column=Key $KEYS 2> /dev/null)
-KEY_FILE=$QUBES_SSH_DIRECTORY/$SELECTED
-
-# Exit if nothing selected
-if [ -z $SELECTED ] ; then
-  exit 1
+KEY_FILE=$(select_key)
+if [ -n "$KEY_FILE" ]; then
+  chmod -7177 "$KEY_FILE"
+  ssh-add "$KEY_FILE" 2>/dev/null
 fi
 
-# Save default key selection
-echo $SELECTED > $DEFAULT_FILE
-
-# Make sure ssh-add is happy with permissions
-chmod 0700 $QUBES_SSH_DIRECTORY
-chmod 0600 $QUBES_SSH_DIRECTORY/*
-
-# Start ssh-agent, add key
-eval $(umask 066; ssh-agent) > /dev/null
-ssh-add $KEY_FILE > /dev/null
-
 if [ $TIMEOUT -gt 0 ] ; then
-  timeout --foreground "$TIMEOUT" socat - UNIX-CONNECT:$SSH_AUTH_SOCK
+  timeout --foreground "$TIMEOUT" socat - "UNIX-CONNECT:$SSH_AUTH_SOCK"
 else
-  socat - UNIX-CONNECT:$SSH_AUTH_SOCK
+  socat - "UNIX-CONNECT:$SSH_AUTH_SOCK"
 fi
 
 # Clean up
-kill $SSH_AGENT_PID 2> /dev/null
+kill $SSH_AGENT_PID 2>/dev/null
