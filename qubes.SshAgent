@@ -19,19 +19,26 @@ select_key() {
   local argc=0
   local argv=()
   while IFS= read -r -d '' KEY; do
-    KEY_BASENAME=$(basename "$KEY" .pub)
-
-    if [ -r "$QUBES_SSH_DIRECTORY/$KEY_BASENAME" ]; then
-      # Default key will be already selected in prompt
-      if [ "$KEY_BASENAME" = "$DEFAULT_KEY" ]; then
-        argv[$((argc++))]=True
-      else
-        argv[$((argc++))]=False
-      fi
-      argv[$((argc++))]=$KEY_BASENAME
+    if [ -d "$KEY" ]; then
+        KEY_BASENAME=$(basename "$KEY")
+    else
+        KEY_BASENAME=$(basename "$KEY" .pub)
+        if [ ! -r "$QUBES_SSH_DIRECTORY/$KEY_BASENAME" ]; then
+          echo "No private key exists for $KEY" | $LOGGER
+          continue
+        fi
     fi
 
-  done < <(find "$QUBES_SSH_DIRECTORY" -type f -name '*.pub' -print0 | sort -z)
+    # Default key will be already selected in prompt
+    if [ "$KEY_BASENAME" = "$DEFAULT_KEY" ]; then
+      argv[$((argc++))]=True
+    else
+      argv[$((argc++))]=False
+    fi
+    argv[$((argc++))]=$KEY_BASENAME
+
+  done < <((find "$QUBES_SSH_DIRECTORY" -mindepth 1 -maxdepth 1 -type f -readable -name '*.pub' -print0;
+            find "$QUBES_SSH_DIRECTORY" -mindepth 1 -maxdepth 1 -type d -readable ! -empty -print0) | sort -z)
 
   if [ $argc -eq 0 ]; then
     echo "No SSH keys found in directory '$QUBES_SSH_DIRECTORY'" | $LOGGER
@@ -54,8 +61,13 @@ eval $(umask 0077; ssh-agent) >/dev/null
 # Prompt user for key selection
 KEY_FILE=$(select_key)
 if [ -n "$KEY_FILE" ]; then
-  chmod -7177 "$KEY_FILE"
-  ssh-add "$KEY_FILE" 2>/dev/null
+  if [ -d "$KEY_FILE" ]; then
+    find "$KEY_FILE" -type f ! -name '*.pub' -execdir chmod -7177 '{}' + 2>&1 | $LOGGER
+    find "$KEY_FILE" -type f ! -name '*.pub' -execdir ssh-add '{}' + 2>&1 | $LOGGER
+  else
+    chmod -7177 "$KEY_FILE" 2>&1 | $LOGGER
+    ssh-add "$KEY_FILE" 2>&1 | $LOGGER
+  fi
 fi
 
 if [ $TIMEOUT -gt 0 ] ; then
