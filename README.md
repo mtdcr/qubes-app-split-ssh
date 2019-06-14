@@ -30,6 +30,7 @@ Copy files from this repository to various destinations (VM is the first argumen
 - TemplateVM for SSH-vault
 
   * Copy `qubes.SshAgent` to `/etc/qubes-rpc/qubes.SshAgent`.
+  * Make `qubes.SshAgent` executable. For example, running `sudo chmod +x /etc/qubes-rpc/qubes.SshAgent` in the TemplateVM
   * Shutdown your TemplateVM.
 
 - TemplateVM for AppVM:
@@ -40,8 +41,9 @@ Copy files from this repository to various destinations (VM is the first argumen
 
 - SSH-vault:
 
-  * Create a directory `~/.qubes-ssh/$AppVM` for each AppVM allowed to access your SSH-vault.
+  * Create a directory `~/.qubes_ssh/$AppVM` for each AppVM allowed to access your SSH-vault.
   * Populate these directories with private and public SSH key files.
+  * You cna have multiple private and public key pairs in each directory and will be prompted for the key to use. This may be useful for transitioning between keys.
 
 - AppVM (optional):
 
