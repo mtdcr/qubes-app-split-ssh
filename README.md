@@ -43,7 +43,7 @@ Copy files from this repository to various destinations (VM is the first argumen
 
   * Create a directory `~/.qubes_ssh/$AppVM` for each AppVM allowed to access your SSH-vault.
   * Populate these directories with private and public SSH key files.
-  * You cna have multiple private and public key pairs in each directory and will be prompted for the key to use. This may be useful for transitioning between keys.
+  * You can have multiple private and public key pairs in each directory and will be prompted for the key to use. This may be useful for transitioning between keys.
 
 - AppVM (optional):
 
