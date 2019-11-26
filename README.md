@@ -49,3 +49,7 @@ Copy files from this repository to various destinations (VM is the first argumen
 
   * Put the name of your SSH-vault into `/rw/config/ssh-vault`.
   * Restart your AppVM.
+
+## Troubleshooting
+
+If something isn't working, you can check the service logs by running `sudo journalctl -t qubes.SshAgent`.
