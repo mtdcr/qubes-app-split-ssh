@@ -45,10 +45,27 @@ select_key() {
     return
   fi
 
-  local SELECTED=$(zenity --list --radiolist --title "SSH key selection" \
+  local CACHE_FILE="$QUBES_SSH_DIRECTORY/.cache"
+  local confirm=true
+  if [ $argc -eq 2 -a -f "$CACHE_FILE" ]; then
+    local SECONDS=$(cat "$CACHE_FILE")
+    if [ "$SECONDS" -eq "$SECONDS" ] 2>/dev/null; then
+      local NOW=$(date +%s)
+      if [ $SECONDS -eq -1 -o $(stat --format=%Y "$DEFAULT_FILE") -ge $(($NOW - $SECONDS)) ]; then
+        confirm=
+      fi
+    fi
+  fi
+
+  if [ -n "$confirm" ]; then
+    local SELECTED=$(zenity --list --radiolist --title "SSH key selection" \
                           --text="Domain $QREXEC_REMOTE_DOMAIN is requesting an ssh key." \
                           --column=Select --column=Key --width=300 --height=400 \
                           "${argv[@]}" 2>/dev/null)
+  else
+    local SELECTED=${argv[1]}
+  fi
+
   if [ -n "$SELECTED" ]; then
     echo "$SELECTED" >"$DEFAULT_FILE"
     echo "$QUBES_SSH_DIRECTORY/$SELECTED"

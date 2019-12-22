@@ -44,6 +44,7 @@ Copy files from this repository to various destinations (VM is the first argumen
   * Create a directory `~/.qubes_ssh/$AppVM` for each AppVM allowed to access your SSH-vault.
   * Populate these directories with private and public SSH key files.
   * You can have multiple private and public key pairs in each directory and will be prompted for the key to use. This may be useful for transitioning between keys.
+  * Optionally save the number of seconds after which use of a key needs to be reconfirmed in a file called `~/.qubes_ssh/$AppVM/.cache`, where -1 has the special meaning of always skipping the confirmation dialog. This only has an effect if there is exactly one key file or directory in `~/.qubes_ssh/$AppVM`. Consider creating special purpose AppVMs for tasks using this feature.
 
 - AppVM (optional):
 
