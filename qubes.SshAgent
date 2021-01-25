@@ -38,6 +38,7 @@ select_key() {
     argv[$((argc++))]=$KEY_BASENAME
 
   done < <((find -L "$QUBES_SSH_DIRECTORY" -mindepth 1 -maxdepth 1 -type f -readable -name '*.pub' -print0;
+            find -L "$QUBES_SSH_DIRECTORY" -mindepth 1 -maxdepth 1 -type f -readable -name '*.pem' -print0;
             find -L "$QUBES_SSH_DIRECTORY" -mindepth 1 -maxdepth 1 -type d -readable ! -empty -print0) | sort -z)
 
   if [ $argc -eq 0 ]; then
